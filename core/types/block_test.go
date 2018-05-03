@@ -23,8 +23,8 @@ import (
 	"reflect"
 	"testing"
 
-	"mygostudy/myeth/common"
-	"mygostudy/myeth/rlp"
+	"myeth/common"
+	"myeth/rlp"
 )
 
 // from bcValidBlockTest.json, "SimpleTx"
@@ -67,4 +67,10 @@ func TestBlockEncoding(t *testing.T) {
 	if !bytes.Equal(ourBlockEnc, blockEnc) {
 		t.Errorf("encoded block mismatch:\ngot:  %x\nwant: %x", ourBlockEnc, blockEnc)
 	}
+}
+
+func TestBlockNonce(t *testing.T) {
+	s := EncodeNonce(128)
+	arr, _ := s.MarshalText()
+	fmt.Println(string(arr))
 }
