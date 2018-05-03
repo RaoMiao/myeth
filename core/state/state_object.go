@@ -2,8 +2,8 @@ package state
 
 import (
 	"math/big"
-	"mygostudy/myeth/common"
-	"mygostudy/myeth/crypto"
+	"myeth/common"
+	"myeth/crypto"
 )
 
 var emptyCodeHash = crypto.Keccak256(nil)

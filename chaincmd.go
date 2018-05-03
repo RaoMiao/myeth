@@ -2,10 +2,10 @@ package main
 
 import (
 	"math/big"
-	"mygostudy/myeth/common"
-	"mygostudy/myeth/core"
-	"mygostudy/myeth/ethdb"
-	"mygostudy/myeth/params"
+	"myeth/common"
+	"myeth/core"
+	"myeth/ethdb"
+	"myeth/params"
 
 	"gopkg.in/urfave/cli.v1"
 )

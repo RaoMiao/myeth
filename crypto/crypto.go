@@ -28,10 +28,10 @@ import (
 	"math/big"
 	"os"
 
-	"mygostudy/myeth/common"
-	"mygostudy/myeth/common/math"
-	"mygostudy/myeth/crypto/sha3"
-	"mygostudy/myeth/rlp"
+	"myeth/common"
+	"myeth/common/math"
+	"myeth/crypto/sha3"
+	"myeth/rlp"
 )
 
 var (

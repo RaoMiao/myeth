@@ -21,7 +21,7 @@ import (
 	"math/rand"
 	"testing"
 
-	"mygostudy/myeth/common/hexutil"
+	"myeth/common/hexutil"
 )
 
 // Tests that data bitset encoding and decoding works and is bijective.

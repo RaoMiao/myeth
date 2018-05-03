@@ -23,9 +23,9 @@ import (
 	"math/big"
 	"sync/atomic"
 
-	"mygostudy/myeth/common"
-	"mygostudy/myeth/common/hexutil"
-	"mygostudy/myeth/rlp"
+	"myeth/common"
+	"myeth/common/hexutil"
+	"myeth/rlp"
 )
 
 //go:generate gencodec -type txdata -field-override txdataMarshaling -out gen_tx_json.go

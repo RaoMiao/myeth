@@ -26,10 +26,10 @@ import (
 	"time"
 	"unsafe"
 
-	"mygostudy/myeth/common"
-	"mygostudy/myeth/common/hexutil"
-	"mygostudy/myeth/crypto/sha3"
-	"mygostudy/myeth/rlp"
+	"myeth/common"
+	"myeth/common/hexutil"
+	"myeth/crypto/sha3"
+	"myeth/rlp"
 )
 
 var (

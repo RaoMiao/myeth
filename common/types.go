@@ -23,8 +23,8 @@ import (
 	"math/rand"
 	"reflect"
 
-	"mygostudy/myeth/common/hexutil"
-	"mygostudy/myeth/crypto/sha3"
+	"myeth/common/hexutil"
+	"myeth/crypto/sha3"
 )
 
 const (

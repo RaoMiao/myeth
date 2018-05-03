@@ -19,9 +19,9 @@ package types
 import (
 	"io"
 
-	"mygostudy/myeth/common"
-	"mygostudy/myeth/common/hexutil"
-	"mygostudy/myeth/rlp"
+	"myeth/common"
+	"myeth/common/hexutil"
+	"myeth/rlp"
 )
 
 //go:generate gencodec -type Log -field-override logMarshaling -out gen_log_json.go

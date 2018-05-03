@@ -20,8 +20,8 @@ import (
 	"fmt"
 	"math/big"
 
-	"mygostudy/myeth/common/hexutil"
-	"mygostudy/myeth/crypto"
+	"myeth/common/hexutil"
+	"myeth/crypto"
 )
 
 type bytesBacked interface {

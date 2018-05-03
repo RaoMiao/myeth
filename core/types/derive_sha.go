@@ -17,7 +17,7 @@
 package types
 
 import (
-	"mygostudy/myeth/common"
+	"myeth/common"
 )
 
 type DerivableList interface {

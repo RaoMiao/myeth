@@ -4,8 +4,8 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"errors"
-	"mygostudy/myeth/common"
-	"mygostudy/myeth/params"
+	"myeth/common"
+	"myeth/params"
 )
 
 type DatabaseReader interface {

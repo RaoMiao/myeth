@@ -1,7 +1,7 @@
 package main
 
 import (
-	"mygostudy/myeth/utils"
+	"myeth/utils"
 	"os"
 
 	"gopkg.in/urfave/cli.v1"

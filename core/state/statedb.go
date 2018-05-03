@@ -1,9 +1,9 @@
 package state
 
 import (
-	"mygostudy/myeth/common"
-	"mygostudy/myeth/core/types"
-	"mygostudy/myeth/crypto"
+	"myeth/common"
+	"myeth/core/types"
+	"myeth/crypto"
 )
 
 type revision struct {

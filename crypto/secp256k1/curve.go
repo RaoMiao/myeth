@@ -36,7 +36,7 @@ import (
 	"math/big"
 	"unsafe"
 
-	"mygostudy/myeth/common/math"
+	"myeth/common/math"
 )
 
 /*

@@ -22,9 +22,9 @@ import (
 	"fmt"
 	"math/big"
 
-	"mygostudy/myeth/common"
-	"mygostudy/myeth/crypto"
-	"mygostudy/myeth/params"
+	"myeth/common"
+	"myeth/crypto"
+	"myeth/params"
 )
 
 var (

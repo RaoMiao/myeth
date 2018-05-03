@@ -21,9 +21,9 @@ import (
 	"fmt"
 	"io"
 
-	"mygostudy/myeth/common"
-	"mygostudy/myeth/common/hexutil"
-	"mygostudy/myeth/rlp"
+	"myeth/common"
+	"myeth/common/hexutil"
+	"myeth/rlp"
 	"unsafe"
 )
 

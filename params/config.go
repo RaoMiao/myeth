@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"math/big"
 
-	"mygostudy/myeth/common"
+	"myeth/common"
 )
 
 var (

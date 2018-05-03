@@ -23,8 +23,8 @@ import (
 	"crypto/elliptic"
 	"fmt"
 
-	"mygostudy/myeth/common/math"
-	"mygostudy/myeth/crypto/secp256k1"
+	"myeth/common/math"
+	"myeth/crypto/secp256k1"
 )
 
 // Ecrecover returns the uncompressed public key that created the given signature.
