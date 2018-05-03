@@ -1,6 +1,7 @@
 {
 	"comment": "",
 	"ignore": "test",
+<<<<<<< HEAD
 	"package": [
 		{
 			"checksumSHA1": "OV+/R43DDDJ/Gxrx9oQob/K7sL0=",
@@ -88,4 +89,8 @@
 		}
 	],
 	"rootPath": "mygostudy/myeth"
+=======
+	"package": [],
+	"rootPath": "myeth"
+>>>>>>> 150982b22a89c294d9e5ac9d047a2f411986a94e
 }
