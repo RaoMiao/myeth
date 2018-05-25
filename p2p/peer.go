@@ -1,6 +1,7 @@
 package p2p
 
 import (
+	"myeth/p2p/discover"
 	"sync"
 	"time"
 )
@@ -48,4 +49,36 @@ type protoHandshake struct {
 	Name       string
 	Caps       []Cap
 	ListenPort uint64
+}
+
+//统计两个协议数组能够对上的协议
+func countMatchingProtocols(protocols []Protocol, caps []Cap) int {
+	n := 0
+	for _, cap := range caps {
+		for _, proto := range protocols {
+			if proto.Name == cap.Name && proto.Version == cap.Version {
+				n++
+			}
+		}
+	}
+	n++
+	return n
+}
+
+func matchProtocols(protocols []Protocol, caps []Cap, rw MsgReadWriter) map[string]*protoRW {
+
+}
+
+func newPeer(conn *conn, protocols []Protocol) *Peer {
+	protomap := matchProtocols(protocols, conn.caps, conn)
+	p := &Peer{}
+	return p
+}
+
+func (p *Peer) ID() discover.NodeID {
+	return p.rw.id
+}
+
+func (p *Peer) run() (err error) {
+	return nil
 }

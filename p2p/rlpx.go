@@ -1,71 +1,32 @@
 package p2p
 
 import (
-	"crypto/cipher"
 	"crypto/ecdsa"
-	"crypto/rand"
-	"fmt"
-	"hash"
 	"io"
+	"myeth/p2p/discover"
 	"net"
-	"sync"
 	"time"
 
-	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/p2p/discover"
 	"github.com/seeleteam/go-seele/crypto/ecies"
 )
 
 const (
-	maxUint24 = ^uint32(0) >> 8
-
-	sskLen = 16 // ecies.MaxSharedKeyLength(pubKey) / 2
-	sigLen = 65 // elliptic S256
-	pubLen = 64 // 512 bit pubkey in uncompressed representation without format byte
-	shaLen = 32 // hash length (for nonce etc)
-
-	authMsgLen  = sigLen + shaLen + pubLen + shaLen + 1
-	authRespLen = pubLen + shaLen + 1
-
-	eciesOverhead = 65 /* pubkey */ + 16 /* IV */ + 32 /* MAC */
-
-	encAuthMsgLen  = authMsgLen + eciesOverhead  // size of encrypted pre-EIP-8 initiator handshake
-	encAuthRespLen = authRespLen + eciesOverhead // size of encrypted pre-EIP-8 handshake reply
-
-	// total timeout for encryption handshake and protocol
-	// handshake in both directions.
-	handshakeTimeout = 5 * time.Second
-
-	// This is the timeout for sending the disconnect reason.
-	// This is shorter than the usual timeout because we don't want
-	// to wait if the connection is known to be bad anyway.
-	discWriteTimeout = 1 * time.Second
+	// devp2p message codes
+	handshakeMsg = 0x00
+	discMsg      = 0x01
+	pingMsg      = 0x02
+	pongMsg      = 0x03
+	getPeersMsg  = 0x04
+	peersMsg     = 0x05
 )
 
-// rlpxFrameRW implements a simplified version of RLPx framing.
-// chunked messages are not supported and all headers are equal to
-// zeroHeader.
-//
-// rlpxFrameRW is not safe for concurrent use from multiple goroutines.
-type rlpxFrameRW struct {
-	conn io.ReadWriter
-	enc  cipher.Stream
-	dec  cipher.Stream
+const (
+	handshakeTimeout = 5 * time.Second
+)
 
-	macCipher  cipher.Block
-	egressMAC  hash.Hash
-	ingressMAC hash.Hash
-
-	snappy bool
-}
-
-// rlpx is the transport protocol used by actual (non-test) connections.
-// It wraps the frame encoder with locks and read/write deadlines.
+//rlpx 协议
 type rlpx struct {
 	fd net.Conn
-
-	rmu, wmu sync.Mutex
-	rw       *rlpxFrameRW
 }
 
 func newRLPX(fd net.Conn) transport {
@@ -73,109 +34,144 @@ func newRLPX(fd net.Conn) transport {
 	return &rlpx{fd: fd}
 }
 
-// secrets represents the connection secrets
-// which are negotiated during the encryption handshake.
-type secrets struct {
-	//RemoteID              discover.NodeID
-	AES, MAC              []byte
-	EgressMAC, IngressMAC hash.Hash
-	Token                 []byte
+//rlpx 实现 transport协议
+func (t *rlpx) ReadMsg() (Msg, error) {
+
+}
+
+func (t *rlpx) WriteMsg(msg Msg) error {
+
+}
+
+func (t *rlpx) close(err error) {
+
+}
+
+//p2p 双方都放松自己的握手包给对方 同时等待对方的握手包
+//发送我们的握手包 给他们 接收他们的握手包
+func (t *rlpx) doProtoHandshake(our *protoHandshake) (their *protoHandshake, err error) {
+	werr := make(chan error, 1)
+	go func() {
+		//发送一个握手包
+		werr <- Send(t.fd, handshakeMsg, our)
+	}()
+	if their, err = readProtocolHandshake(t.fd, our); err != nil {
+		<-werr
+		return nil, err
+	}
+	if err := <-werr; err != nil {
+		return nil, nil
+	}
+
+	return their, nil
+}
+
+func readProtocolHandshake(rw MsgReader, our *protoHandshake) (*protoHandshake, error) {
+	//ReadMsg 这里应该会堵塞住
+	msg, err := rw.ReadMsg()
+	if err != nil {
+		return nil, err
+	}
+
+	if msg.Code != handshakeMsg {
+		return nil, nil
+	}
+
+	var hs protoHandshake
+	//将网络数据 解密成 握手结构体
+	return &hs, nil
 }
 
 // doEncHandshake runs the protocol handshake using authenticated
 // messages. the protocol handshake is the first authenticated message
 // and also verifies whether the encryption handshake 'worked' and the
 // remote side actually provided the right public key.
-func (t *rlpx) doEncHandshake(prv *ecdsa.PrivateKey) error {
-	var (
-		sec secrets
-		err error
-	)
-
-	sec, err = initiatorEncHandshake(t.fd, prv, dial.ID, nil)
-
-	if err != nil {
-		return discover.NodeID{}, err
+func (t *rlpx) doEncHandshake(prv *ecdsa.PrivateKey, dest *discover.Node) (discover.NodeID, error) {
+	if dest == nil {
+		//服务器端接收
+		receiverEncHandshake(t.fd, prv)
+	} else {
+		//客户端主动连接
+		initiatorEncHandshake(t.fd, prv, dest.ID)
 	}
-	t.wmu.Lock()
-	t.rw = newRLPXFrameRW(t.fd, sec)
-	t.wmu.Unlock()
-	return sec.RemoteID, nil
+
+	return dest.ID, nil
 }
 
-// encHandshake contains the state of the encryption handshake.
 type encHandshake struct {
 	initiator bool
-	//remoteID  discover.NodeID
+	destID    discover.NodeID
 
-	remotePub            *ecies.PublicKey  // remote-pubk
-	initNonce, respNonce []byte            // nonce
-	randomPrivKey        *ecies.PrivateKey // ecdhe-random
-	remoteRandomPub      *ecies.PublicKey  // ecdhe-random-pubk
+	remotePub *ecies.PublicKey // remote-pubk
 }
 
-// initiatorEncHandshake negotiates a session token on conn.
-// it should be called on the dialing side of the connection.
-//
-// prv is the local client's private key.
-func initiatorEncHandshake(conn io.ReadWriter, prv *ecdsa.PrivateKey, remoteID discover.NodeID, token []byte) (s secrets, err error) {
-	h := &encHandshake{initiator: true}
-	authMsg, err := h.makeAuthMsg(prv, token)
-	if err != nil {
-		return s, err
-	}
-	authPacket, err := sealEIP8(authMsg, h)
-	if err != nil {
-		return s, err
-	}
-	if _, err = conn.Write(authPacket); err != nil {
-		return s, err
-	}
+//处理AuthMsg消息
+func (h *encHandshake) handleAuthMsg(msg *authMsgV4, prv *ecdsa.PrivateKey) {
 
-	authRespMsg := new(authRespV4)
-	authRespPacket, err := readHandshakeMsg(authRespMsg, encAuthRespLen, prv, conn)
-	if err != nil {
-		return s, err
-	}
-	if err := h.handleAuthResp(authRespMsg); err != nil {
-		return s, err
-	}
-	return h.secrets(authPacket, authRespPacket)
 }
 
-// makeAuthMsg creates the initiator handshake message.
-func (h *encHandshake) makeAuthMsg(prv *ecdsa.PrivateKey, token []byte) (*authMsgV4, error) {
-	rpub, err := h.remoteID.Pubkey()
-	if err != nil {
-		return nil, fmt.Errorf("bad remoteID: %v", err)
-	}
-	h.remotePub = ecies.ImportECDSAPublic(rpub)
-	// Generate random initiator nonce.
-	h.initNonce = make([]byte, shaLen)
-	if _, err := rand.Read(h.initNonce); err != nil {
-		return nil, err
-	}
-	// Generate random keypair to for ECDH.
-	h.randomPrivKey, err = ecies.GenerateKey(rand.Reader, crypto.S256(), nil)
-	if err != nil {
-		return nil, err
-	}
+// RLPx v4 handshake auth (defined in EIP-8).
+type authMsgV4 struct {
+	Version uint
+}
 
-	// Sign known message: static-shared-secret ^ nonce
-	token, err = h.staticSharedSecret(prv)
-	if err != nil {
-		return nil, err
-	}
-	signed := xor(token, h.initNonce)
-	signature, err := crypto.Sign(signed, h.randomPrivKey.ExportECDSA())
-	if err != nil {
-		return nil, err
-	}
+type authRespV4 struct {
+	Version uint
+}
 
+func (h *encHandshake) makeAuthMsg(prv *ecdsa.PrivateKey) *authMsgV4 {
 	msg := new(authMsgV4)
-	copy(msg.Signature[:], signature)
-	copy(msg.InitiatorPubkey[:], crypto.FromECDSAPub(&prv.PublicKey)[1:])
-	copy(msg.Nonce[:], h.initNonce)
 	msg.Version = 4
-	return msg, nil
+	return msg
+}
+
+func (h *encHandshake) makeAuthResp() (msg *authRespV4) {
+	msg = new(authRespV4)
+	msg.Version = 4
+	return msg
+}
+
+//prv 是当前节点的私钥
+func initiatorEncHandshake(conn io.ReadWriter, prv *ecdsa.PrivateKey, remoteID discover.NodeID) {
+	h := &encHandshake{initiator: true, destID: remoteID}
+	authMsg := h.makeAuthMsg(prv)
+
+	if _, err := conn.Write(authMsg); err != nil {
+		return
+	}
+
+	authRespV4 := new(authRespV4)
+	authRespPacket, err := readHandshakeMsg(1024, prv, conn)
+	if err != nil {
+
+	}
+
+}
+
+func readHandshakeMsg(plainSize int, prv *ecdsa.PrivateKey, r io.Reader) ([]byte, error) {
+	buf := make([]byte, plainSize)
+	if _, err := io.ReadFull(r, buf); err != nil {
+		return buf, err
+	}
+
+	//一大段解密
+	return buf, nil
+}
+
+//服务端接收authMsg请求
+func receiverEncHandshake(conn io.ReadWriter, prv *ecdsa.PrivateKey) {
+	authMsg := new(authMsgV4)
+	authPacket, err := readHandshakeMsg(1024, prv, conn)
+	if err != nil {
+		return
+	}
+
+	h := new(encHandshake)
+	h.handleAuthMsg(authMsg, prv)
+
+	authRespMsg := h.makeAuthResp()
+
+	if _, err = conn.Write(authRespMsg); err != nil {
+		return
+	}
 }

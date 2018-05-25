@@ -39,3 +39,8 @@ type Msg struct {
 	Payload    io.Reader
 	ReceivedAt time.Time
 }
+
+//发送一个消息结构体 使用 w接口  数据使用RLP encoded的
+func Send(w MsgWriter, msgcode uint64, data interface{}) error {
+	return w.WriteMsg(Msg{Code: msgcode, Size: uint32()})
+}
