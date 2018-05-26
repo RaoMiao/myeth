@@ -27,6 +27,8 @@ const (
 //rlpx 协议
 type rlpx struct {
 	fd net.Conn
+
+	rw *rlpxFrameRW
 }
 
 func newRLPX(fd net.Conn) transport {
@@ -131,7 +133,7 @@ func (h *encHandshake) makeAuthResp() (msg *authRespV4) {
 	return msg
 }
 
-//prv 是当前节点的私钥
+//这个函数是客户端发起的
 func initiatorEncHandshake(conn io.ReadWriter, prv *ecdsa.PrivateKey, remoteID discover.NodeID) {
 	h := &encHandshake{initiator: true, destID: remoteID}
 	authMsg := h.makeAuthMsg(prv)

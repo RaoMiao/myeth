@@ -2,6 +2,7 @@ package p2p
 
 import (
 	"io"
+	"myeth/rlp"
 	"time"
 )
 
@@ -40,7 +41,22 @@ type Msg struct {
 	ReceivedAt time.Time
 }
 
+//NEED DO!! 这个函数的功能还有待考究
+func (msg Msg) Discard() error {
+	return nil
+}
+
 //发送一个消息结构体 使用 w接口  数据使用RLP encoded的
+//w 是 protoRW, msgcode 是发送的协议 命令字, data是发送的数据
 func Send(w MsgWriter, msgcode uint64, data interface{}) error {
-	return w.WriteMsg(Msg{Code: msgcode, Size: uint32()})
+	size, r, err := rlp.EncodeToReader(data)
+	if err != nil {
+		return err
+	}
+	return w.WriteMsg(Msg{Code: msgcode, Size: uint32(size), Payload: r})
+}
+
+//支持发送 0 到 多个数据
+func SendItems(w MsgWriter, msgcode uint64, elems ...interface{}) error {
+	return Send(w, msgcode, elems)
 }

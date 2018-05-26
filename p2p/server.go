@@ -17,9 +17,6 @@ type Config struct {
 	PrivateKey *ecdsa.PrivateKey `toml:"-"`
 
 	// 这个P2P节点所支持的协议
-	// Protocols should contain the protocols supported
-	// by the server. Matching protocols are launched for
-	// each peer.
 	Protocols []Protocol `toml:"-"`
 
 	// If ListenAddr is set to a non-nil address, the server
@@ -124,8 +121,6 @@ func (srv *Server) Start() (err error) {
 		return errors.New("server already running")
 	}
 	srv.running = true
-
-	//srv.newTransport = newRLPX
 
 	srv.quit = make(chan struct{})
 	srv.addpeer = make(chan *conn)
