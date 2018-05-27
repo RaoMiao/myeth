@@ -20,6 +20,16 @@ const (
 	pingInterval = 15 * time.Second
 )
 
+const (
+	// devp2p message codes
+	handshakeMsg = 0x00
+	discMsg      = 0x01
+	pingMsg      = 0x02
+	pongMsg      = 0x03
+	getPeersMsg  = 0x04
+	peersMsg     = 0x05
+)
+
 //proto Reader Writer
 //相关相关的读写
 type protoRW struct {
@@ -82,6 +92,8 @@ type protoHandshake struct {
 	Name       string
 	Caps       []Cap
 	ListenPort uint64
+
+	ID discover.NodeID
 }
 
 //统计两个协议数组能够对上的协议
@@ -243,7 +255,7 @@ func (p *Peer) startProtocols(writeErr chan<- error) {
 
 		//执行每一个协议的run函数 将他们启动起来
 		go func() {
-			err := proto.Run(p, proto)
+			proto.Run(p, proto)
 		}()
 	}
 }

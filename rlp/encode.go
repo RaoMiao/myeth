@@ -31,10 +31,84 @@ var (
 	EmptyList   = []byte{0xC0}
 )
 
+// Encoder is implemented by types that require custom
+// encoding rules or want to encode private fields.
 type Encoder interface {
+	// EncodeRLP should write the RLP encoding of its receiver to w.
+	// If the implementation is a pointer method, it may also be
+	// called for nil pointers.
+	//
+	// Implementations should generate valid RLP. The data written is
+	// not verified at the moment, but a future version might. It is
+	// recommended to write only a single value but writing multiple
+	// values or no value at all is also permitted.
 	EncodeRLP(io.Writer) error
 }
 
+// Encode writes the RLP encoding of val to w. Note that Encode may
+// perform many small writes in some cases. Consider making w
+// buffered.
+//
+// Encode uses the following type-dependent encoding rules:
+//
+// If the type implements the Encoder interface, Encode calls
+// EncodeRLP. This is true even for nil pointers, please see the
+// documentation for Encoder.
+//
+// To encode a pointer, the value being pointed to is encoded. For nil
+// pointers, Encode will encode the zero value of the type. A nil
+// pointer to a struct type always encodes as an empty RLP list.
+// A nil pointer to an array encodes as an empty list (or empty string
+// if the array has element type byte).
+//
+// Struct values are encoded as an RLP list of all their encoded
+// public fields. Recursive struct types are supported.
+//
+// To encode slices and arrays, the elements are encoded as an RLP
+// list of the value's elements. Note that arrays and slices with
+// element type uint8 or byte are always encoded as an RLP string.
+//
+// A Go string is encoded as an RLP string.
+//
+// An unsigned integer value is encoded as an RLP string. Zero always
+// encodes as an empty RLP string. Encode also supports *big.Int.
+//
+// An interface value encodes as the value contained in the interface.
+//
+// Boolean values are not supported, nor are signed integers, floating
+// point numbers, maps, channels and functions.
+func Encode(w io.Writer, val interface{}) error {
+	if outer, ok := w.(*encbuf); ok {
+		// Encode was called by some type's EncodeRLP.
+		// Avoid copying by writing to the outer encbuf directly.
+		return outer.encode(val)
+	}
+	eb := encbufPool.Get().(*encbuf)
+	defer encbufPool.Put(eb)
+	eb.reset()
+	if err := eb.encode(val); err != nil {
+		return err
+	}
+	return eb.toWriter(w)
+}
+
+// EncodeBytes returns the RLP encoding of val.
+// Please see the documentation of Encode for the encoding rules.
+func EncodeToBytes(val interface{}) ([]byte, error) {
+	eb := encbufPool.Get().(*encbuf)
+	defer encbufPool.Put(eb)
+	eb.reset()
+	if err := eb.encode(val); err != nil {
+		return nil, err
+	}
+	return eb.toBytes(), nil
+}
+
+// EncodeReader returns a reader from which the RLP encoding of val
+// can be read. The returned size is the total size of the encoded
+// data.
+//
+// Please see the documentation of Encode for the encoding rules.
 func EncodeToReader(val interface{}) (size int, r io.Reader, err error) {
 	eb := encbufPool.Get().(*encbuf)
 	eb.reset()

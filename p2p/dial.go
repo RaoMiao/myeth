@@ -42,8 +42,12 @@ type dialstate struct {
 	static map[discover.NodeID]*dialTask
 }
 
+//make 一定要在 使用之前 make
 func newDialState(static []*discover.Node) *dialstate {
-	s := &dialstate{}
+	s := &dialstate{
+		static:  make(map[discover.NodeID]*dialTask),
+		dialing: make(map[discover.NodeID]connFlag),
+	}
 	for _, n := range static {
 		s.addStatic(n)
 	}

@@ -187,7 +187,7 @@ func (srv *Server) Stop() {
 //开启TCP 监听别的peer消息
 func (srv *Server) startListening() error {
 	// Launch the TCP listener.
-	listener, err := net.Listen("tcp", ":30303")
+	listener, err := net.Listen("tcp", srv.ListenAddr)
 	if err != nil {
 		return err
 	}
