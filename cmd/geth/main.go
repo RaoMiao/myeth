@@ -20,6 +20,7 @@ package main
 import (
 	"runtime"
 
+	"myeth/common"
 	"myeth/eth"
 	"myeth/node"
 	"myeth/utils"
@@ -37,8 +38,14 @@ type gethConfig struct {
 }
 
 func makeConfigNode() *node.Node {
+	var nodelist []string
+	if err := common.LoadJSON("./geth/config.json", &nodelist); err != nil {
+		return nil
+	}
 
-	stack, err := node.New()
+	cfg := node.Config{}
+	cfg.P2P.ListenAddr = nodelist[0]
+	stack, err := node.New(&cfg)
 	if err != nil {
 		//utils.Fatalf("Failed to create the protocol stack: %v", err)
 	}
