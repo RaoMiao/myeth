@@ -3,9 +3,9 @@ package p2p
 import (
 	"crypto/ecdsa"
 	"errors"
+	"fmt"
 	"net"
 	"sync"
-	"time"
 
 	"myeth/p2p/discover"
 )
@@ -158,7 +158,7 @@ func (srv *Server) Start() (err error) {
 	// srv.ntab = ntab
 
 	if srv.Dialer == nil {
-		srv.Dialer = TCPDialer{&net.Dialer{Timeout: 10 * time.Second}}
+		srv.Dialer = TCPDialer{&net.Dialer{}}
 	}
 
 	dialer := newDialState(srv.StaticNodes)
@@ -272,6 +272,7 @@ func (srv *Server) setupConn(c *conn, flags connFlag, dialDest *discover.Node) e
 	var err error
 	//NEED DO!!这里的c.id 和 dialDest里面的有不同吗
 	if c.id, err = c.doEncHandshake(srv.PrivateKey, dialDest); err != nil {
+		fmt.Println(err.Error())
 		//srv.log.Trace("Failed RLPx handshake", "addr", c.fd.RemoteAddr(), "conn", c.flags, "err", err)
 		return err
 	}
