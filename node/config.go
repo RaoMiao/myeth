@@ -2,6 +2,7 @@ package node
 
 import (
 	"crypto/ecdsa"
+	"fmt"
 	"myeth/crypto"
 	"myeth/p2p"
 	"myeth/p2p/discover"
@@ -66,9 +67,9 @@ func (c *Config) NodeKey() *ecdsa.PrivateKey {
 
 	}
 
-	// pubKey := key.PublicKey
-	// nodeId := discover.PubkeyID(&pubKey)
-	// fmt.Println(nodeId.String())
+	pubKey := key.PublicKey
+	nodeId := discover.PubkeyID(&pubKey)
+	fmt.Println(nodeId.String())
 	keyfile = filepath.Join(c.DataDir, datadirPrivateKey)
 	if err := crypto.SaveECDSA(keyfile, key); err != nil {
 
