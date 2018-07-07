@@ -24,7 +24,7 @@ import (
 type Protocol struct {
 	// Name should contain the official protocol name,
 	// often a three-letter word.
-	// 协议名字 通常是三哥单词
+	// 协议名字 通常是三个单词
 	Name string
 
 	// Version should contain the version number of the protocol.

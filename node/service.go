@@ -18,6 +18,8 @@ package node
 
 import (
 	"myeth/p2p"
+
+	"myeth/ethdb"
 )
 
 // ServiceContext is a collection of service independent options inherited from
@@ -52,4 +54,12 @@ type Service interface {
 	// Stop terminates all goroutines belonging to the service, blocking until they
 	// are all terminated.
 	Stop() error
+}
+
+func (ctx *ServiceContext) OpenDatabase(name string, cache int, handles int) (ethdb.Database, error) {
+	db, err := ethdb.NewLDBDatabase(ctx.config.resolvePath(name), cache, handles)
+	if err != nil {
+		return nil, err
+	}
+	return db, nil
 }
