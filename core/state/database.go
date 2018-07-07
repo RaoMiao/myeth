@@ -3,6 +3,8 @@ package state
 import (
 	"myeth/common"
 	"myeth/ethdb"
+	"myeth/trie"
+	"sync"
 )
 
 type Database interface {
@@ -14,6 +16,8 @@ type Database interface {
 }
 
 type cachingDB struct {
+	db *trie.Database
+	mu sync.Mutex
 }
 
 //Merkle Trie
@@ -26,5 +30,20 @@ type Trie interface {
 }
 
 func NewDatabase(db ethdb.Database) Database {
-	return &cachingDB{}
+	return &cachingDB{
+		db: trie.NewDatabase(db),
+	}
+}
+
+func (db *cachingDB) OpenTrie(root common.Hash) (Trie, error) {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
+	tr, err := trie.Ne
+}
+
+// cachedTrie inserts its trie into a cachingDB on commit.
+type cachedTrie struct {
+	*trie.SecureTrie
+	db *cachingDB
 }
