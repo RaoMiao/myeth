@@ -96,3 +96,34 @@ func (db *LDBDatabase) Close() {
 func (db *LDBDatabase) LDB() *leveldb.DB {
 	return db.db
 }
+
+func (db *LDBDatabase) NewBatch() Batch {
+	return &ldbBatch{db: db.db, b: new(leveldb.Batch)}
+}
+
+//用于state批量存数据库
+type ldbBatch struct {
+	db   *leveldb.DB
+	b    *leveldb.Batch
+	size int
+}
+
+func (b *ldbBatch) Put(key, value []byte) error {
+	b.b.Put(key, value)
+	b.size += len(value)
+	return nil
+}
+
+//提交具体内容到LevelDB
+func (b *ldbBatch) Write() error {
+	return b.db.Write(b.b, nil)
+}
+
+func (b *ldbBatch) ValueSize() int {
+	return b.size
+}
+
+func (b *ldbBatch) Reset() {
+	b.b.Reset()
+	b.size = 0
+}
