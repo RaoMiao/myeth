@@ -1,11 +1,28 @@
+// Copyright 2014 The go-ethereum Authors
+// This file is part of the go-ethereum library.
+//
+// The go-ethereum library is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Lesser General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// The go-ethereum library is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU Lesser General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public License
+// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
+
 package trie
 
 import (
 	"fmt"
 	"io"
-	"myeth/common"
-	"myeth/rlp"
 	"strings"
+
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/rlp"
 )
 
 var indices = []string{"0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "a", "b", "c", "d", "e", "f", "[17]"}
@@ -18,7 +35,7 @@ type node interface {
 
 type (
 	fullNode struct {
-		Children [17]node
+		Children [17]node // Actual trie node data to encode/decode (needs custom encoder)
 		flags    nodeFlag
 	}
 	shortNode struct {
@@ -34,6 +51,7 @@ type (
 // unset children need to serialize correctly.
 var nilValueNode = valueNode(nil)
 
+// EncodeRLP encodes a full node into the consensus RLP format.
 func (n *fullNode) EncodeRLP(w io.Writer) error {
 	var nodes [17]node
 
@@ -44,19 +62,20 @@ func (n *fullNode) EncodeRLP(w io.Writer) error {
 			nodes[i] = nilValueNode
 		}
 	}
-
 	return rlp.Encode(w, nodes)
 }
 
 func (n *fullNode) copy() *fullNode   { copy := *n; return &copy }
 func (n *shortNode) copy() *shortNode { copy := *n; return &copy }
 
+// nodeFlag contains caching-related metadata about a node.
 type nodeFlag struct {
-	hash  hashNode
-	gen   uint16
-	dirty bool
+	hash  hashNode // cached hash of the node (may be nil)
+	gen   uint16   // cache generation counter
+	dirty bool     // whether the node has changes that must be written to the database
 }
 
+// canUnload tells whether a node can be unloaded.
 func (n *nodeFlag) canUnload(cachegen, cachelimit uint16) bool {
 	return !n.dirty && cachegen-n.gen >= cachelimit
 }
@@ -88,7 +107,6 @@ func (n *fullNode) fstring(ind string) string {
 	}
 	return resp + fmt.Sprintf("\n%s] ", ind)
 }
-
 func (n *shortNode) fstring(ind string) string {
 	return fmt.Sprintf("{%x: %v} ", n.Key, n.Val.fstring(ind+"  "))
 }
@@ -99,7 +117,6 @@ func (n valueNode) fstring(ind string) string {
 	return fmt.Sprintf("%x ", []byte(n))
 }
 
-//从数据库中恢复node
 func mustDecodeNode(hash, buf []byte, cachegen uint16) node {
 	n, err := decodeNode(hash, buf, cachegen)
 	if err != nil {
